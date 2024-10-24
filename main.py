@@ -45,15 +45,40 @@ def create_adjacency_from_edge_m(edge_m, order):
 
 def create_APSP(adjacency):
     order = len(adjacency)
+    adjacency_valid = [[-1 for _ in range(order)] for _ in range(order)]
+    for i in range(order):
+        for j in range(order):
+            if adjacency[i][j] != float('inf'):
+                adjacency_valid[j][i] = i
+    adjacency_valid = [[x for x in adjacency_valid[i] if x != -1] for i in range(len(adjacency_valid))]
+
+    print(adjacency_valid)
+
     steps = [adjacency]
     empty_matrix = [[0 for _ in range(order)] for _ in range(order)]
     for k in range(order-2):
         curr_m = empty_matrix
         prev_m = steps[-1]
         for j in range(order):
+            if j < 1:
+                valid_vs = []
+                for v in range(order):
+                    if prev_m[j][v] != float('inf'):
+                        valid_vs.append(v)
+
             for i in range(order):
-                curr_m[j][i] = min([(prev_m[j][v] + adjacency[v][i]) for v in range(order)])
+
+                if i == j:
+                    curr_m[j][i] = 0
+                else:
+                    tests = [(prev_m[j][v] + adjacency[v][i]) for v in adjacency_valid[i]]
+                    if len(tests) == 0:
+                        curr_m[j][i] = float('inf')
+                    else:
+                        curr_m[j][i] = min(tests)
+
             print(f'row {j} done')
+        print(curr_m)
         steps.append(curr_m)
         print(f'step {k} done')
     return steps
@@ -62,8 +87,9 @@ def shortest_path(start, finish, steps):
     return min([step[start-1][finish-1] for step in steps])
 
 def main():
-    order = 5
-    edge_list = create_matrix("test.txt")
+    order = 1000
+
+    edge_list = create_matrix("graph.txt")
     print(edge_list)
     adjacency_matrix = create_adjacency_from_edge_m(edge_list, order)
     print(adjacency_matrix)
