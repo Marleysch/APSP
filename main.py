@@ -1,5 +1,28 @@
-from venv import create
 
+import copy
+
+def floyd_warshall(graph):
+    """
+    Implements the Floyd-Warshall algorithm for finding all-pairs shortest paths.
+
+    Args:
+        graph (list): A 2D list representing the adjacency matrix of the graph.
+
+    Returns:
+        list: A 2D list representing the shortest path distances between all pairs of vertices.
+    """
+
+    n = len(graph)
+    dist = [row[:] for row in graph]
+
+    # Update the distance matrix considering all vertices as intermediate vertices.
+    for k in range(n):
+        for i in range(n):
+            for j in range(n):
+                dist[i][j] = min(dist[i][j], dist[i][k] + dist[k][j])
+        print(f'row {k} done')
+
+    return dist
 
 def create_matrix(file):
     with open(file, 'r') as file:
@@ -43,42 +66,49 @@ def create_adjacency_from_edge_m(edge_m, order):
                 adjacency[i][j] = float('inf')
     return adjacency
 
+
 def create_APSP(adjacency):
     order = len(adjacency)
-    adjacency_valid = [[-1 for _ in range(order)] for _ in range(order)]
-    for i in range(order):
-        for j in range(order):
-            if adjacency[i][j] != float('inf'):
-                adjacency_valid[j][i] = i
-    adjacency_valid = [[x for x in adjacency_valid[i] if x != -1] for i in range(len(adjacency_valid))]
 
-    print(adjacency_valid)
+    adjacency_valid = [[-1 for _ in range(order)] for _ in range(order)]
+    adjacency_p_valid = [[-1 for _ in range(order)] for _ in range(order)]
+    for j in range(order):
+        for i in range(order):
+            if adjacency[j][i] != float('inf'):
+                adjacency_valid[i][j] = j
+                adjacency_p_valid[j][i] = i
+    adjacency_valid = [[x for x in adjacency_valid[i] if x != -1] for i in range(len(adjacency_valid))]
+    adjacency_p_valid = [[x for x in adjacency_p_valid[i] if x != -1] for i in range(len(adjacency_valid))]
+    for i in range(order):
+        adjacency_valid[i] = set(adjacency_valid[i])
+        adjacency_p_valid[i] = set(adjacency_p_valid[i])
+    curr_m_valid = adjacency_p_valid
 
     steps = [adjacency]
-    empty_matrix = [[0 for _ in range(order)] for _ in range(order)]
+    curr_m = [[0 for _ in range(order)] for _ in range(order)]
     for k in range(order-2):
-        curr_m = empty_matrix
         prev_m = steps[-1]
+        next_m_valid = []
+
         for j in range(order):
-            if j < 1:
-                valid_vs = []
-                for v in range(order):
-                    if prev_m[j][v] != float('inf'):
-                        valid_vs.append(v)
+            next_m_row = set()
 
             for i in range(order):
-
                 if i == j:
                     curr_m[j][i] = 0
                 else:
-                    tests = [(prev_m[j][v] + adjacency[v][i]) for v in adjacency_valid[i]]
+                    tests = [(prev_m[j][v] + adjacency[v][i]) for v in curr_m_valid[j] & adjacency_valid[i]]
                     if len(tests) == 0:
                         curr_m[j][i] = float('inf')
                     else:
                         curr_m[j][i] = min(tests)
 
-            print(f'row {j} done')
-        print(curr_m)
+                if curr_m[j][i] != float('inf'):
+                    next_m_row.add(i)
+
+            next_m_valid.append(next_m_row)
+
+        curr_m_valid = next_m_valid
         steps.append(curr_m)
         print(f'step {k} done')
     return steps
@@ -90,15 +120,16 @@ def main():
     order = 1000
 
     edge_list = create_matrix("graph.txt")
-    print(edge_list)
+
     adjacency_matrix = create_adjacency_from_edge_m(edge_list, order)
-    print(adjacency_matrix)
-    APSP_matrix = create_APSP(adjacency_matrix)
+    matrix = floyd_warshall(adjacency_matrix)
+    # APSP_matrix = create_APSP(adjacency_matrix)
     userinput = ''
     while userinput != 'quit':
         j = int(input('Enter the point you would like to start at: '))
         i = int(input('Enter the point you would like to end at: '))
-        print(f'The shortest distance from {j} to {i} is {shortest_path(j,i,APSP_matrix)}')
+        # print(f'The shortest distance from {j} to {i} is {shortest_path(j,i,matrix)}')
+        print(f'The shortest distance from {j} to {i} is {matrix[j-1][i-1]}')
         userinput = input('Would you like to go again? Type quit if no: ')
 
 if __name__ == "__main__":
