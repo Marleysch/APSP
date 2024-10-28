@@ -1,5 +1,6 @@
-
-import copy
+import random
+import sys
+import time
 
 def floyd_warshall(graph):
     """
@@ -84,9 +85,11 @@ def create_APSP(adjacency):
         adjacency_p_valid[i] = set(adjacency_p_valid[i])
     curr_m_valid = adjacency_p_valid
 
-    steps = [adjacency]
+    steps = [adjacency, adjacency]
     curr_m = [[0 for _ in range(order)] for _ in range(order)]
+    shortest_path_m = adjacency
     for k in range(order-2):
+        start = time.perf_counter()
         prev_m = steps[-1]
         next_m_valid = []
 
@@ -94,24 +97,29 @@ def create_APSP(adjacency):
             next_m_row = set()
 
             for i in range(order):
-                if i == j:
-                    curr_m[j][i] = 0
-                else:
-                    tests = [(prev_m[j][v] + adjacency[v][i]) for v in curr_m_valid[j] & adjacency_valid[i]]
-                    if len(tests) == 0:
-                        curr_m[j][i] = float('inf')
-                    else:
-                        curr_m[j][i] = min(tests)
+                # print(curr_m_valid)
+                # print(adjacency_valid)
+                # print(curr_m_valid[j] & adjacency_valid[i])
+                # print(f'prev_m: {prev_m} and adjacecny: {adjacency}')
+                # tests = [(prev_m[j][v] + adjacency[v][i]) for v in curr_m_valid[j] & adjacency_valid[i]] + [float('inf')]
+                tests = [prev_m[j][v] +adjacency[v][i] for v in range(order)]
+                # print(tests)
+                curr_m[j][i] = min(tests)
 
                 if curr_m[j][i] != float('inf'):
                     next_m_row.add(i)
+                if curr_m[j][i] < shortest_path_m[j][i]:
+                    shortest_path_m[j][i] = curr_m[j][i]
 
             next_m_valid.append(next_m_row)
 
         curr_m_valid = next_m_valid
         steps.append(curr_m)
-        print(f'step {k} done')
-    return steps
+        del steps[1]
+        end = time.perf_counter()
+        print(f'step {k} done in {end - start} seconds')
+
+    return shortest_path_m
 
 def shortest_path(start, finish, steps):
     return min([step[start-1][finish-1] for step in steps])
@@ -120,10 +128,19 @@ def main():
     order = 1000
 
     edge_list = create_matrix("graph.txt")
-
+    # FWmatrix = []
+    # matrix = []
+    # while FWmatrix == matrix:
+    #     adjacency_matrix = [[random.randint(1,sys.maxsize) for _ in range(1000)] for _ in range(1000)]#create_adjacency_from_edge_m(edge_list, order)
+    #     # adjacency_matrix = [[3,2,3],[7,4,4],[4,4,7]]
     adjacency_matrix = create_adjacency_from_edge_m(edge_list, order)
-    matrix = floyd_warshall(adjacency_matrix)
-    # APSP_matrix = create_APSP(adjacency_matrix)
+    # FWmatrix = floyd_warshall(adjacency_matrix)
+    matrix = create_APSP(adjacency_matrix)
+    # print(adjacency_matrix)
+    # for i in range(10):
+    #     print(f'{FWmatrix[i]}\t\t{matrix[i]}')
+
+
     userinput = ''
     while userinput != 'quit':
         j = int(input('Enter the point you would like to start at: '))
